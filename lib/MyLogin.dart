@@ -1,7 +1,8 @@
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'MainScreen.dart';
 import 'MySignUp.dart';
+import 'myRecyclerView.dart';
 
 class MyLogin extends StatelessWidget {
   const MyLogin({Key? key}) : super(key: key);
@@ -60,11 +61,11 @@ class _MyLoginState extends State<loginStatefulWidget> {
                           labelText: 'Email',
 
                         ),
-                        // autovalidateMode: AutovalidateMode.onUserInteraction,
-                        // validator: (emailController) =>
-                        // emailController != null && !EmailValidator.validate(emailController)
-                        // ? 'Enter a valid email'
-                        // :null,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        validator: (emailController) =>
+                        emailController != null && !EmailValidator.validate(emailController)
+                        ? 'Enter a valid email'
+                        :null,
                       ),
                     ),
                     Container(
@@ -89,13 +90,14 @@ class _MyLoginState extends State<loginStatefulWidget> {
                                 email: emailController.text.trim(),
                                 password: passwordController.text.trim(),
                               );
-                              Navigator.push(context, MaterialPageRoute(builder: (context) =>  MainScreen()));
+                              Navigator.push(context, MaterialPageRoute(builder: (context) =>  MyRecycler()));
 
                             } on FirebaseAuthException catch (e) {
                               if (e.code == 'weak-password') {
                                 print('The password provided is too weak.');
-                              } else if (e.code == 'email-already-in-use') {
-                                print('The account already exists for that email.');
+                              } else{
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(const SnackBar(content: Text('Invalid credentials')));
                               }
                             } catch (e) {
                               print(e);

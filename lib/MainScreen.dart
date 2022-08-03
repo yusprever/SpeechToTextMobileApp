@@ -1,88 +1,92 @@
 import 'package:avatar_glow/avatar_glow.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:highlight_text/highlight_text.dart';
+import 'package:midterm_project/my_model.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
-
+String _text = '';
+String title = '';
+var mytemp = '';
+bool _isEditingText = false;
+TextEditingController _editingController = TextEditingController();
 class MainScreen  extends StatelessWidget {
+
+  MainScreen({super.key, required this.mykey});
+  final my_model mykey;
+
+
   @override
   Widget build(BuildContext context) {
+
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.purple,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: SpeechScreen(),
+      home: SpeechScreen(mykey:mykey),
     );
   }
 }
 
 class SpeechScreen extends StatefulWidget {
+  const SpeechScreen({super.key, required this.mykey});
+  final my_model mykey;
+
+
   @override
-  _SpeechScreenState createState() => _SpeechScreenState();
+  _SpeechScreenState createState() => _SpeechScreenState(mykey:mykey);
 }
 
 class _SpeechScreenState extends State<SpeechScreen> {
-  final Map<String, HighlightedWord> _highlights = {
-    'flutter': HighlightedWord(
-      onTap: () => print('flutter'),
-      textStyle: const TextStyle(
-        color: Colors.blue,
-        fontWeight: FontWeight.bold,
-        fontSize: 32.0,
-      ),
-    ),
-    'voice': HighlightedWord(
-      onTap: () => print('voice'),
-      textStyle: const TextStyle(
-        color: Colors.green,
-        fontWeight: FontWeight.bold,
-        fontSize: 32.0,
-      ),
-    ),
-    'subscribe': HighlightedWord(
-      onTap: () => print('midterm'),
-      textStyle: const TextStyle(
-        color: Colors.red,
-        fontWeight: FontWeight.bold,
-        fontSize: 32.0,
-      ),
-    ),
-    'like': HighlightedWord(
-      onTap: () => print('project'),
-      textStyle: const TextStyle(
-        color: Colors.blueAccent,
-        fontWeight: FontWeight.bold,
-        fontSize: 32.0,
-      ),
-    ),
-    'comment': HighlightedWord(
-      onTap: () => print('Tobin'),
-      textStyle: const TextStyle(
-        color: Colors.green,
-        fontWeight: FontWeight.bold,
-        fontSize: 32.0,
-      ),
-    ),
-  };
-
+  // _SpeechScreenState({required this.mykey});
+  final my_model mykey;
   stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
-  String _text = 'Press the button and start speaking';
-  double _confidence = 1.0;
+
+
+
+  _SpeechScreenState({required this.mykey}){
+    _text = mykey.notes;
+    title = mykey.title;
+
+  }
 
   @override
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
+    _editingController = TextEditingController(text: title);
+  }
+
+  @override
+  void dispose() {
+    _editingController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Confidence: ${(_confidence * 100.0).toStringAsFixed(1)}%'),
+        title: _editTitleTextField(),
+        actions: <Widget>[
+          Padding(
+              padding: EdgeInsets.only(right: 20.0),
+              child: GestureDetector(
+                onTap: () {
+                  CollectionReference saving = FirebaseFirestore.instance.collection('NotesTable');
+                  saving.doc(title).set({'Title':title, 'notes':_text+=mytemp}).then((value) => print('Data saved'));
+                },
+                child: Icon(
+                  Icons.save,
+                  size: 26.0,
+                ),
+              )
+          ),
+        ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: AvatarGlow(
@@ -101,10 +105,9 @@ class _SpeechScreenState extends State<SpeechScreen> {
         reverse: true,
         child: Container(
           padding: const EdgeInsets.fromLTRB(30.0, 30.0, 30.0, 150.0),
-          child: TextHighlight(
-            text: _text,
-            words: _highlights,
-            textStyle: const TextStyle(
+          child: Text(
+             '$_text $mytemp',
+            style: const TextStyle(
               fontSize: 32.0,
               color: Colors.black,
               fontWeight: FontWeight.w400,
@@ -125,10 +128,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
         setState(() => _isListening = true);
         _speech.listen(
           onResult: (val) => setState(() {
-            _text = val.recognizedWords;
-            if (val.hasConfidenceRating && val.confidence > 0) {
-              _confidence = val.confidence;
-            }
+            mytemp = " " + val.recognizedWords;
           }),
         );
       }
@@ -136,5 +136,35 @@ class _SpeechScreenState extends State<SpeechScreen> {
       setState(() => _isListening = false);
       _speech.stop();
     }
+
+  }
+  Widget _editTitleTextField() {
+    if (_isEditingText)
+      return Center(
+        child: TextField(
+          onSubmitted: (newValue){
+            setState(() {
+              title = newValue;
+              _isEditingText =false;
+            });
+          },
+          autofocus: true,
+          controller: _editingController,
+        ),
+      );
+    return InkWell(
+        onTap: () {
+      setState(() {
+        _isEditingText = true;
+      });
+    },
+    child: Text(
+    title,
+    style: TextStyle(
+    color: Colors.white,
+    fontSize: 20.0,
+    ),
+    ));
+
   }
 }

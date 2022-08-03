@@ -1,3 +1,4 @@
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'MyLogin.dart';
@@ -54,13 +55,18 @@ class _MySignUpState extends State<signUpStatefulWidget> {
                         )),
                     Container(
                       padding: const EdgeInsets.all(10),
-                      child: TextField(
+                      child: TextFormField(
                         controller: emailController,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           labelText: 'Email',
 
                         ),
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        validator: (emailController) =>
+                        emailController != null && !EmailValidator.validate(emailController)
+                            ? 'Enter a valid email'
+                            :null,
                       ),
                     ),
                     Container(
@@ -106,7 +112,8 @@ class _MySignUpState extends State<signUpStatefulWidget> {
                               if (e.code == 'weak-password') {
                                 print('The password provided is too weak.');
                               } else if (e.code == 'email-already-in-use') {
-                                print('The account already exists for that email.');
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(const SnackBar(content: Text('This email already exists')));
                               }
                             } catch (e) {
                               print(e);
